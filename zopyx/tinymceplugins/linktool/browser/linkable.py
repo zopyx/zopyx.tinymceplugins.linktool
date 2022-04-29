@@ -36,11 +36,11 @@ class MetaInformation(BrowserView):
         # and render the aggregated HTML
         html = content_folder.restrictedTraverse('@@asHTML')()
         root = lxml.html.fromstring(html)
-    
+
         documents = OrderedDict()
 
         for div in root.xpath('//div'):
-            if not 'level-0' in div.get('class', ''):
+            if 'level-0' not in div.get('class', ''):
                 continue
 
             uid = div.get('uid')  # of root node
@@ -54,9 +54,9 @@ class MetaInformation(BrowserView):
 
             for node in div.xpath(xpath_query(('h1', 'h2', 'h3', 'h4', 'h5'))):
                 id = node.get('id')
-                level = int(node.tag[1:])
-                url = 'resolveuid/%s/#%s' % (uid, id)
+                url = f'resolveuid/{uid}/#{id}'
                 if id:
+                    level = int(node.tag[1:])
                     d = dict(id=id,
                              target_url=url,
                              name=node.tag,
@@ -67,7 +67,7 @@ class MetaInformation(BrowserView):
             # process images
             for node in div.xpath('//img'):
                 id = node.get('id')
-                src = node.get('src') 
+                src = node.get('src')
                 if not src:
                     continue
                 src_parts = src.split('/')
@@ -75,16 +75,16 @@ class MetaInformation(BrowserView):
                     src = '/'.join(src_parts[:-1])
                 elif '@@images' in src:
                     src = '/'.join(src_parts[:src_parts.index('@@images')])
-                url = 'resolveuid/%s/#%s' % (uid, id)
-                image_url = '%s/%s/image_thumb' % (content_folder.absolute_url(), src)
+                url = f'resolveuid/{uid}/#{id}'
+                image_url = f'{content_folder.absolute_url()}/{src}/image_thumb'
                 if id:
                     d = dict(id=id,
                              target_url=url,
                              image_url=image_url,
                              name=node.tag)
                     documents[uid]['images'].append(d)
-                    
-                                     
+
+
             # process tables
             for node in div.xpath('//table'):
                 id = node.get('id')
@@ -97,7 +97,7 @@ class MetaInformation(BrowserView):
                 if node.xpath('//caption'):
                     caption = node.xpath('//caption')[0].text_content()
 
-                url = 'resolveuid/%s/#%s' % (uid, id)
+                url = f'resolveuid/{uid}/#{id}'
                 d = dict(id=id,
                          target_url=url,
                          name=node.tag,
@@ -107,11 +107,10 @@ class MetaInformation(BrowserView):
             # process lists
             documents[uid]['lists'] = []
             for list_node in div.xpath(xpath_query(('ol', 'ul', 'dl'))):
-                list_items = list()
+                list_items = []
                 for item in list_node.xpath(xpath_query(('li', 'dt'))):
-                    item_id = item.get('id')
-                    if item_id:
-                        url = 'resolveuid/%s/#%s' % (uid, item_id)
+                    if item_id := item.get('id'):
+                        url = f'resolveuid/{uid}/#{item_id}'
                         list_items.append(dict(id=item_id,
                                                target_url=url,
                                                text=item.text_content()))
